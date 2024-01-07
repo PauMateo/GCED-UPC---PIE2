@@ -3,9 +3,9 @@ title: "RESUM PIE2 - R commands"
 author: "PauM PauF"
 date: "2023-12-27"
 output: html_document
-editor_options: 
+editor_options:  
   markdown: 
-    wrap: 72
+    wrap: 72 
 ---
 
 ```{r setup, include=FALSE}
@@ -49,6 +49,8 @@ dades = data.frame(periode = temps,
                    ntumors = ntumors,
                    nratolins = nratolins)
 ```
+
+head(dades) ens mostra les dades que acabem de llegir. Sol donar-ne les primeres línies.
 
 ## Plots
 
@@ -580,5 +582,4 @@ anova(mod_ratolins, mod_inter, test = "LRT")
 #Amb p-valor tant gran concloem que la interacció no és significativa.
 
 ```
-
 
