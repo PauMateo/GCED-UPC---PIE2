@@ -50,7 +50,8 @@ dades = data.frame(periode = temps,
                    nratolins = nratolins)
 ```
 
-head(dades) ens mostra les dades que acabem de llegir. Sol donar-ne les primeres línies.
+head(dades) ens mostra la capçalera de les dades que acabem de llegir. Sol donar-ne les primeres línies.
+cbind() significa column bind i severix per unir vectors o matrius en una nova matriu.
 
 ## Plots
 
@@ -61,9 +62,12 @@ library(ggplot2)
 library(moderndive)
 ```
 
+
+
 #### Sense suposar interacció
 
 ```{r}
+library(ggplot2)
 ggplot(iris) +
   aes(x = Sepal.Width, y = Sepal.Length, color = Species) +
   geom_parallel_slopes(se=FALSE) +
@@ -73,6 +77,7 @@ ggplot(iris) +
 #### Suposant interacció
 
 ```{r}
+library(ggplot2)
 ggplot(iris) +
   aes(x = Sepal.Width, y = Sepal.Length, color = Species) +
   geom_smooth(se = FALSE, method = "lm") +
@@ -83,6 +88,7 @@ ggplot(iris) +
 
 ```{r}
 # boxplot bonic
+library(ggplot2)
 ggplot(iris, aes(Species, Sepal.Length)) +
   geom_boxplot(aes(fill = Species)) +
   theme_minimal() +
@@ -95,6 +101,7 @@ boxplot(Sepal.Length ~ Species, data=iris)
 #### Separar plots segons alguna variable (en comptes de fer-ho per colors, per exemple):
 
 ```{r}
+library(ggplot2)
 ggplot(iris) + 
   aes(x = Sepal.Width, y = Sepal.Length) + 
   geom_point() + 
@@ -112,6 +119,7 @@ emmip(model, A~B)
 ```{r}
 indexs = c(69, 106, 107, 119, 123, 131, 132, 136) 
 mostres_cook <- irisdat4[irisdat4$X %in% indexs, ] 
+library(ggplot2)
 ggplot(iris) + …. + gplot + geom_text(data = mostres_cook, aes(label = X), vjust = -1)
 
 ```
@@ -129,6 +137,7 @@ Funció anova(model1, model)
 Ens fa una comparació amb test d'hipòtesi: H0: model1=model2, H1:model1!=model2.
 Es fa anova(model1, model2) per comparar dos models. Model està aniuat a Model2 i volem saber si són diferents. El que volem veure és si el model2 és significativament diferent del model 1, podem mirar AIC i fer el test anova. Ens dona un p-valor sobre l'anterior test d'hipòtesi. Si surt significatiu vol dir que val la pena quedar-se amb el model2.
 
+Amb la funció model.matrix(ml) podem veure la matriu del model ml. Si només en volem veure la capçalera podem emprar head(model.matrix(ml)).
 
 ## Interpretació summary
 
@@ -174,6 +183,11 @@ També es poden obtenir fent predict(model, newdata=, intervals=). Es pot posar 
 
 
 ## Plots (residus, leverage, cook) i com haurien de ser
+
+Per analitzar els residus d'un model podem fer plot(model). A continuació s'expliquen cadascun dels gràfics que ens surten, que en són 4, tot i que ens solem fixar en només tres.
+Per poder-los veure els quatre alhora podem fer servir la funció:
+par(mfrow=c(2,2))
+Això fa un enquadrament de 2x2 dels gràfics. Canviant els valors podríem visualitzar els gràfics com vulguem.
 
 #### Resudial vs Fitted
 
@@ -346,6 +360,7 @@ Aquesta comanda la utilitzarem perquè ens creï els IC de cada grup.
 (taula **anova**).
 
 ```{r}
+library(emmeans)
 comp = emmeans(mod, ~ type, level=0.95)
 comp
 ```
@@ -373,6 +388,8 @@ fàcil interpretar-lo.
 Ens agruparà els grups que siguin significativament iguals.
 
 ```{r}
+library(multcomp)
+library(multcompView)
 cld(comp, level = 0.95)
 ```
 
@@ -546,6 +563,7 @@ Així ens quedem amb un subconjunt de variables les quals hem anat traient poc a
 Podem ara graficar les nostres prediccions.
 ```{r}
 penguins$preds = predict(mod_bwd, type = "response")
+library(ggplot2)
 ggplot(penguins) +
     aes(x = preds, y = sex) +
         geom_boxplot()
