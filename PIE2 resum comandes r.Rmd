@@ -107,10 +107,13 @@ ggplot(iris) +
   geom_point() + 
   facet_wrap(~Species)
 ```
-#### Per fer un gràfic ràpidament assumint linealitat podem fer
+#### Per fer un gràfic assumint linealitat podem fer
+
 ```{r}
 emmip(model, A~B)
 ```
+Emmip de la llibreria emmeans crea un gràfic d'interacció de les Mitjanes Marginals Estimades (EMMs) basat en un model ajustat i una fórmula senzilla.
+Proporciona una forma de visualitzar com aquestes mitjanes marginals estimades canvien o interactuen entre elles, com les variables s'influeixen mútuament i com els seus efectes poden variar segons els nivells d'altres variables en el model.
 
 #### Veure algunes mostres en concret a un plot:
 
