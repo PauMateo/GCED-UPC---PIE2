@@ -1,0 +1,436 @@
+---
+title: "PIE2 Entregable 1"
+author: "Pau Mateo, Pau Fernández"
+date: "Curs 2023-24"
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: 2
+    number_sections: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(readr)
+library(emmeans)
+```
+
+
+
+# Exercici 1
+**Un grup d’investigadors en ciències de l’esport vol saber els efectes d’un programa d’entrenament
+de tres mesos en el pes mig de dones entre 18 i 25 anys. Per evitar discrepàncies grans entre indvidus, només
+consideren dones amb alçades entre 155cm i 165cm. Els investigdors van pesar les participants abans i després
+del programa d’entrenament. Podeu trobar les dades a l’arxiu entrenament4.csv. Els
+pesos estan en kg.**
+
+## Gràfic
+**Feu un gràfic que resumeixi les dades i interpreteu-lo.**
+
+```{r, echo=FALSE, fig.show="hold"}
+entrenament4 <- read_csv("C:/Users/pauma/OneDrive/Escritorio/UNI/2n/PIE2/PiE2Entr1/dades/entrenament4.csv", col_types = cols(before = col_integer(), after = col_integer()))
+
+dif = entrenament4$after - entrenament4$before
+
+```
+
+Aquí ens interessa veure tant les dades com la diferència d'aquestes. D'ara en endevant parlarem de la diferència de pes de les dones que han participat a l'entrenament com a la resta del seu pes de després respecte el d'abans, de tal manera que si la diferència és negativa vol dir que ha perdut pes. 
+
+
+
+```{r, fig.align = 'center', out.width="65%", echo=FALSE}
+ boxplot( entrenament4$before, entrenament4$after,
+         ylab="Pes [kg]",
+         names=c("Abans entrenament", "Després entrenament"),
+         col = c("#E69F00",  "#56B4E9"))
+```
+
+A aquest boxplot es veu que la mediana de pesos ha disminuït amb l'entrenamnet, el que permet intuïr que l'entrenament ha estat mínimament efectiu, però no podem dir res a priori. També es veu que la variança de pesos ha augmentat.
+
+
+Ara mirem la diferència de pesos. 
+
+
+
+```{r, out.width = "50%", fig.show="hold", echo=FALSE}
+
+ggplot( entrenament4, aes(x=entrenament4$before, y=dif, color = dif < 0) ) + 
+  geom_point() + labs(x='Pes inicial [kg]', y='Diferencia de pes [kg]', title = "Diferència de pes (després-abans) en funció del pes inicial") + 
+  scale_color_manual(values = c("TRUE" = "#E69F00", "FALSE" = "#56B4E9"), 
+                     labels = c("TRUE" = "Pèrdua de pes", "FALSE" = "Augment de pes")) +
+  guides(color = guide_legend(title = NULL))
+
+
+data <- data.frame(dif)
+ggplot(data, aes(x = "",y=dif), notchwidth = 0.25)+
+         geom_boxplot()+
+  labs(title="Diferència de pes (després-abans)") + 
+  theme(axis.title.x = element_blank())
+       
+       
+```
+El gràfic de l'esquerra mostra el pes que ha guanyat o perdut una dona amb l'entrenament en funció del seu pes inicial. Podem veure que no hi ha gaire relació entre els efectes de l'entrenament (diferència de pes) i el pes inicial de la persona. 
+Amb l'últim boxplot veiem que la mediana de la diferència de pes és negativa, i que més del 50% de les dones han perdut pes. Però també hi ha dones que n'han guanyat, per tant, a priori no podem confirmar que l'entrenament sigui efectiu, ja que el tamany mostral tampoc és gaire gran.
+
+## Tests d'hipòtesis sobre la diferència de mitjanes de pes
+
+**Hi ha evidències a nivell $\alpha$ = 0.05 que el pes esperat canvia després de la rutina d’entrenament? Si és
+així, hi ha evidència de pèrdua o guany de pes? Contesteu la pregunta fent servir i) valors crítics, ii)
+intèrvals de confiança i iii) p-valors.**
+
+### Amb valors crítics
+
+Tractarem les dades d'aquest exercici com a mostres aparellades:
+
+* les dades d'una mateixa dona (pes abans i després del seu entrenament) són dependents,
+* els resultats de diferents dones son independents entre ells, i
+* els efectes de l'entrenament no depenen del pes inicial
+
+
+Test sobre les diferències (bilateral) sota normalitat:
+
+$H_0:$ after $=$ before
+
+$H_1:$ after $\neq$ before
+
+```{r}
+dif = entrenament4$after - entrenament4$before
+md = mean(dif)
+n = length(dif)
+Sd = sd(dif)
+T = md / (Sd/sqrt(n))
+
+alpha = 1-0.95
+Z = qt(alpha/2, n-1, lower.tail = FALSE)
+```
+
+```{r, echo=FALSE}
+
+resultats = c( abs(T), Z)
+names(resultats) = c("Estadístic de prova T", "Punt crític Z")
+resultats
+cat("abs(T) > Z:", abs(T) > Z)
+```
+
+
+Amb la prova bilateral veiem que no hi ha diferències significatives en relació al canvi de pes amb un nivell de confiança del 95\%.
+
+Calculem l'interval de confiança:
+
+```{r}
+IC = c(md - qt(alpha/2, n-1, lower.tail = FALSE)*Sd/sqrt(n),
+       md + qt(alpha/2, n-1, lower.tail = FALSE)*Sd/sqrt(n))
+IC
+```
+
+Calculem el p-valor:
+```{r}
+pvalue = pvalue = pt(abs(T), n-1, lower.tail=FALSE)*2
+pvalue
+```
+
+```{r, eval=FALSE, echo=FALSE}
+t.test(dif, alternative="two.sided", conf.level=0.95)
+```
+
+
+Els resultats obtinguts ens diuen que no hi ha evidències (a nivell de conviança 95\%) de que el pes esperat canvii després de la rutina d'entrenament, tot i que la mitjana de pes de les dades donades sí que hagi disminuït. S'ha de dir però que observant l'interval de confiança `IC = [`r IC`]` es veu que el zero sí que hi està inclòs però per molt poc, i que l'interval està clarament desplaçat cap a l'esquerra, és a dir, cap a "perdre pes". Això vol dir que tenint aquestes mateixes proporcions, amb una mida mostral més gran o bé amb un nivell de confiança més baix, segurament sí que podriem afirmar que l'entrenament ha estat efectiu per perdre pes.
+
+
+## Interval de confiança sobre la proporció
+
+**Trobeu un intèrval de confiança al 95\% per a la proporció poblacional de dones que perden pes amb la
+rutina d’entrenament. Comenteu els resultats i compareu-los amb els de l’apartat anterior.**
+
+
+```{r}
+perdut_pes = sum( entrenament4$after < entrenament4$before )
+p = perdut_pes / n
+
+IC = c(p - qt(1-alpha/2, n-1)*sqrt( p*(1-p)/n),
+       p + qt(1-alpha/2, n-1)*sqrt( p*(1-p)/n))
+IC
+```
+
+Aquest intèrval de confiança vol dir que el 95% de les vegades que es faci aquest entrenament la proporció de dones que han perdut pes estarà entre `r IC[1]` i `r IC[2]`. 
+
+Això ja encaixa amb l'apartat anterior (on teniem el mateix nivell de confiança), ja que aquest intèrval de confiança conté el valor de proporció 0.5, el que vol dir que no podem rebutjar que la proporció de dones que perden pes és la mateixa que la proporció de dones que no n'han perdut. Si l'intèrval estigués per sobre del 0.5 aleshores sí que podriem dir, amb un nivell de confiança del 95\%, que l'entrenamnent és efectiu, perquè hi hauria un percentatge més elevat de dones que han perdut pes. Però com que no és així, els resultats ja indiquen el mateix que els de l'apartat anterior; amb aquest nivell de confiança no podem dir que l'entrenament hagi estat efectiu.
+
+## Tests d'hipòtesis sobre la proporció
+
+**Hi ha evidències per a concloure (a nivell $\alpha$ = 0.05) que el percentatge de dones que perden pes amb el
+programa és més gran del 70\%? Justifiqueu la resposta.**
+
+$H_0: p_{perd pes} \leq$ 0.70
+
+$H_1: p_{perd pes} >$ 0.70
+
+Realitzem un test unilateral per la dreta. 
+
+```{r}
+alfa=0.05
+p0 = 0.7
+z.obs = (p-p0)/ sqrt( (p0*(1-p0)/n))
+z.crit <- qnorm(alfa, lower.tail=FALSE) #comprovar
+pvalue = pnorm(z.obs, lower.tail=FALSE)
+```
+
+```{r, echo=FALSE}
+
+```
+
+Com que no es compleix la condició $Z_{obs}>Z_{crit}$, no rebutgem $H_0$, i per tant no hi ha evidències a nivell 95% per dir que el percentatge de dones que perden pes amb aquest programa és més gran del 70%. A més, els resultats estan bastant lluny de rebutjar $H_0$ `(p-valor = `r pvalue` >> 0.05)`.
+
+# Exercici 2
+**Una farmacèutica vol provar que un nou medicament és més efectiu que el que es fa servir
+habitualment per a curar una malaltia. A l’arxiu medicament5.csv, hi trobareu els
+resultats. Els individus que s’han recuperat de la malaltia estan marcats amb un 1 i els que no amb un 0.
+Contesteu les següents preguntes.**
+
+
+## Proporcions mostrals i estimacions
+**Trobeu les proporcions mostrals de curats amb el nou medicament i el que es fa servir normalment per
+separat. Feu estimacions puntuals i per intèrval (a nivell de confiança del 95%), també per separat. Feu
+un gràfic per a comparar els dos grups i interpreteu-lo.**
+
+```{r, echo=FALSE}
+medicament5 <- read.csv("C:/Users/pauma/OneDrive/Escritorio/UNI/2n/PIE2/PiE2Entr1/dades/medicament5.csv")
+```
+
+```{r}
+n = length(medicament5$old)
+p.old = sum(medicament5$old) / n
+p.new = sum(medicament5$new) / n
+```
+
+```{r, echo=FALSE}
+resultats = c( p.old, p.new)
+names(resultats) = c("Proporció curats medicament antic", "Proporció curats medicament nou")
+resultats
+```
+
+
+Ara estimem un intèrval de confiança del 95% per a aquestes dues proporcions.
+```{r}
+alpha = 0.05     
+Z = qnorm(alpha/2, lower.tail = FALSE)
+IC.old = c(p.old - Z*sqrt(p.old*(1-p.old)/n), 
+           p.old + Z*sqrt(p.old*(1-p.old)/n))
+
+IC.new = c(p.new - Z*sqrt(p.new*(1-p.new)/n), 
+           p.new + Z*sqrt(p.new*(1-p.new)/n))
+
+```
+Amb això obtenim que l'interval de confiança (a nivell 95%) per la proporció de curats del medicament antic és `IC.old = [`r IC.old`]`, i del medicament nou és `IC.new = [`r IC.new`]`.
+
+Visualitzem-ho gràficament:
+```{r, echo=FALSE, fig.show="hold", fig.align = 'center', warning=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+
+# Dades en un data frame
+dades <- data.frame(
+  Medicament = factor(c("old", "new")),
+  Proporció = c(p.old, p.new),
+  Límit_Inferior = c(IC.old[1], IC.new[1]),
+  Límit_Superior = c(IC.old[2], IC.new[2])
+)
+
+# Crear el gràfic de barres amb intervals de confiança
+grafic <- ggplot(dades, aes(x = Medicament, y = Proporció)) +
+  geom_point(stat = "identity", position = "dodge") +
+  geom_errorbar(
+    width = 0.1,
+    aes(ymin = Límit_Inferior, ymax = Límit_Superior),
+    position = position_dodge(0.9)  ) +
+  
+  labs(
+    title = "Comparació de Proporcions Estimades amb Intervals de Confiança",
+    y = "Proporció",
+    x = "Medicament"  )  + scale_y_continuous(limits = c(0, 1))
+
+# Mostrar el gràfic
+grafic
+
+```
+
+## Comparació d'efectivitat
+
+**Feu una prova d’hipòtesi a nivell $\alpha$ = 0.01 l’objectiu del qual és provar que el nou medicament és més
+efectiu. Escriviu amb cura les hipòtesi i expliqueu per què heu triat aquestes i no unes altres. Resoleu
+la prova amb i) valors crítics i ii) p-valors. Quina conclusió n’extraieu?**
+
+
+### Amb valors crítics
+Agafem les següents hipòtesis:
+
+$H_0: p_{new} \leq p_{old}$
+
+$H_1: p_{new} >p_{old}$
+
+Hem triat aquestes proves d'hipòtesis ja que l'hipotesi nul·la ($H_0$) és la que correspon a no canviar res; si l'efectivitat dels dos medicaments son iguals o si la del medicament antic és més alta, no ens val la pena canviar. I l'l'hipòtesi alternativa ($H_1$) correspon al cas de que el medicament nou sigui millor a l'antic; aleshores sí que ens val la pena canviar de medicament.
+
+Aleshores tenim:
+
+$H_0: p_{neq} - p_{old} \leq 0$
+
+$H_1: p_{neq} - p_{old} > 0$
+
+Estem aplicant un test de la diferència de dues proporcions unilateral per la dreta:
+```{r}
+alpha = 0.01
+
+Z.crit = qnorm(alpha, lower.tail=FALSE)
+p=(n*p.old+n*p.new)/(2*n)
+Z.obs = (p.new - p.old) / sqrt(p*(1-p)*(2/n))
+```
+```{r, echo=FALSE}
+resultats = c( Z.obs, Z.crit)
+names(resultats) = c("Estadístic de prova Zobs", "Valor crític Zcrit")
+resultats
+cat("Z.obs > Z.crit:", Z.obs > Z.crit)
+```
+
+### Amb p-valor
+
+```{r}
+p.value = 1- pnorm(Z.obs)           
+p.value 
+
+```
+
+Veiem que amb els dos mètodes no rebutgem l'hipòtesi nul·la, per tant no hi ha prou diferència significativa amb $\alpha = 0.01$ per poder afirmar que el medicament nou és més efectiu que l'antic tot i que la proporció de curats del nou medicament sigui més alta que la del medicament antic. Això és degut a que el tamany mostral d'aquestes dades no és gaire gran, i que el nivell de confiança és molt elevat (99\%). 
+
+Per exemple, amb aquestes mateixes dades però amb un tamany mostral de `n = 80`, obtindríem un p-valor de `0.004001`; i si `n = 200`, un p-valor de `1.37e-05`.
+
+
+## Intèrval de confiança de la diferència poblacional entre proporcions
+**Feu un intèrval de confiança del 99% per a la diferència poblacional entre la proporció de curats amb el
+nou medicament i el que es fa servir habitualment. L’intèrval conté el zero o no? Compareu el resultat
+amb el que heu trobat a l’apartat anterior.**
+```{r}
+alpha = 0.01
+p.dif = p.new - p.old
+Z = qnorm(alpha/2, lower.tail=FALSE)
+
+IC.dif = c(p.dif - Z*sqrt(p.dif*(1-p.dif)/n), 
+           p.dif + Z*sqrt(p.dif*(1-p.dif)/n))
+IC.dif
+
+```
+
+Veiem que l'intèrval sí que inclou el zero, tot i que és per molt poc. Això no contradiu els resultat de l'apartat anterior, on no hem rebutjat $H_0: p_{new} - p_{old} \leq 0$. Si haguessim rebutjat $H_0$, el zero no estaria dins d'aquest intèrval. 
+
+
+## Mida mostral mínima
+**Si les mides mostrals dels grups són les mateixes, quina és la mida mostral mínima per assegurar que
+l’intèrval de l’apartat anterior té una llargària inferior a 0.1? Justifiqueu la resposta.**
+
+Com que l'intèrval de confiança de l'apartat anterior ve donat per la formula $IC(p) = \hat{p} \pm Z_{\alpha / 2} \sqrt{\hat{p}(1-\hat{p})/n}$, aleshores la mida de l'interval és $2Z_{\alpha / 2} \sqrt{\hat{p}(1-\hat{p})/n}$. 
+Aleshores:
+\begin{equation*}
+2Z_{\alpha / 2} \sqrt{\hat{p}(1-\hat{p})/n} < 0.1 \implies n > 4  Z_{\alpha / 2}^2\cdot\hat{p}(1-\hat{p})/0.01
+\end{equation*}
+
+```{r}
+n.min = p.dif*(1-p.dif)*4*Z**2 /0.01
+n.min 
+```
+Aquest és el valor de n que compleix l'última equació però amb igualtat, aleshores per qualsevol valor de n més gran o igual que ``425``, l'intèrval tindrà un tamany inferior a `0.01`.
+ 
+# Exercici 3
+**Un grup de científics vol fer la prova d’hipòtesi per a mitjanes normals $H_0$ :  $\mu$ $\leq$ 0 contra
+$H_1$ : $\mu$ > 0 a nivell $\alpha$ = 0.05. La variància poblacional és coneguda: $\sigma ^2$ = 1. El seu objectiu és entendre com
+la probabilitat de rebutjar $H_0$ quan és falsa (és a dir, la potència de la prova) depèn del veritable valor de $\mu$ i
+la mida mostral n.**
+
+## Potència de la prova
+**Grafiqueu la probabilitat de rebutjar $H_0$ per a $\mu$ entre 0 i 5 pels casos $n \in$ {5, 10, 15, 50}. Grafiqueu les
+quatre corbes en un sol gràfic. Comenteu els resultats.**
+
+
+La potència d'aquest test l'hem calculat amb:
+
+\begin{equation*}
+1-\beta = 1 - \phi \Big(Z_{\alpha} - \frac{\mu}{\sigma / \sqrt{n}}\Big)
+\end{equation*}
+Sent $\beta$ la probabilitat de cometre un error de tipus II i $\phi(x)$ la probabilitat de l'esquerra de x de la distribució normal estàndard.
+
+```{r, echo=FALSE, fig.show="hold", fig.align = 'center'}
+# Nivell de significació α
+alpha <- 0.05
+
+# Desviació estàndard poblacional
+sigma <- 1
+
+# Valors de µ (mitjana real) de 0 a 5
+mu_values <- seq(0, 5, by = 0.001)
+
+# Diferents mides mostres
+sample_sizes <- c(5, 10, 15, 50)
+        ########## afegir 6.18, 24.73 ??????
+
+# Funció per calcular la potència de la prova
+calculate_power = function(mu, n, alpha, sigma) {
+  z_critical = qnorm(1 - alpha)
+  se = sigma / sqrt(n)
+  z_value = (mu - 0) / se
+  power = 1 - pnorm(z_critical - z_value)
+  return(power)
+}
+
+# Crear un marc de dades per a gràfics
+data <- expand.grid(mu = mu_values, n = sample_sizes)
+data$power <- mapply(calculate_power, data$mu, data$n, alpha, sigma)
+
+# Gràfic
+ggplot(data, aes(x = mu, y = power, color = factor(n))) +
+  geom_line() +
+  labs(title = "Potència de la prova en funció del mida mostral i de la mitjana real",
+       x = "µ (Mitjana Real)",
+       y = "Potència") + 
+  theme_minimal() + 
+  geom_line(linewidth = 0.65) +
+  scale_color_manual(values = c("5"= "black", "10" = "#56B4E9",
+                                "15" = "#999999", "50" = "#E69F00"),
+                     name = "Mida mostral (n)")
+
+```
+Al gràfic podem veure que amb un valor de $\mu$ fixat (per exemple, $\mu = 0.5$), si augmentem el moda mostral, la potència de la prova augment. És a dir, que com més gran sigui el mida mostral menys probabilitat tindrem de no rebutjar $H_0$ quan aquesta és falsa (i.e. menys probabilitat d'error de tipus II). Per altra banda, lògicament, si fixem un mida mostral i augmentem el valor de $\mu$, la potència també augmenta. És a dir, com més es distanciï la distribució de les mostres sota $H_1$ i la distribució d'aquestes sota $H_0$, menys probabilitat tenim de cometre un error de tipus II.
+
+
+
+## Tamany mostral en funció de la potència
+**Quina és la mínima mida mostral que necessitem per tal que la probabilitat de rebutjar $H_0$ quan $\mu$ = 1
+sigui com a mínim 0.8? Quina seria la resposta si, en canvi, $\mu$ = 0.5? Comenteu els resultats.**
+
+
+De l'equació comentada a l'apartat anterior es dedueïx que
+\begin{equation*}
+n = \bigg( \frac{qnorm(1-\beta) + Z_{\alpha}}{\mu / \sigma} \bigg) ^2
+\end{equation*}
+
+Aleshores:
+
+```{r}
+alpha <- 0.05
+Z = qnorm(1 - alpha)
+n.min1 = (qnorm(0.8) + Z)**2
+
+n.min2 = ((qnorm(0.8) + Z)/0.5)**2
+```
+
+```{r, echo = FALSE}
+resultats = c(n.min1, n.min2)
+names(resultats) = c("n mínim per µ=1", "n mínim per µ=0.5")
+resultats
+```
+
+
+
+El tamany mostral que hem trobat és el que correspondria a una potència de 0.8 exactament, per tant si agafem un tamany mostral més gran que aquest, ja tindrem una potència superior a 0.8. 
+
+Aquests resultat ja quadren amb gràfic anterior; fixada una potència, si disminuïm el valor de $\mu$, el tamany mostral augmenta.
+
+
+
